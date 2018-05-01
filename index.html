@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<meta charset="UTF-8">
+<script src="C:\Users\imenez\Desktop\Weather info\jquery-1.11.2.js"></script>
+<script src="C:\Users\imenez\Desktop\Weather info\js\bootstrap.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="C:\Users\imenez\Desktop\Weather info\css\bootstrap.min.css">
+
+<script type="text/javascript">
+
+
+
+function getLocation(city,country) {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else { 
+        alert("browser doesnt support :(");
+    }
+	
+	
+}
+ var current_adress;
+ var current_ln,current_lt;
+ var APPIDkey = "c7150167d970bb71fad0859e83d6f42c";
+ 
+ 	//console.log("current_lt== " + current_lt);
+	//console.log("current_ln== " + current_ln);
+
+function showPosition(position) {
+    current_lt = position.coords.latitude; 
+    current_ln = position.coords.longitude;
+	console.log("current_lt- " + current_lt);
+	console.log("current_ln- " + current_ln);
+	var locations = current_lt + ',' + current_ln;
+	
+	//reverse geocoding
+			$.ajax({
+			
+						method: 'POST',
+						data: locations , 
+                        dataType: 'json',
+						crossDomain: true,
+                        headers: {
+                        Accept:"application/json",
+						},
+                        type:'GET',
+                        url:'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + locations + '&key="PUT YOUR API KEY"',
+                        success: function(data)
+                        {
+							console.log('current_adres=>' +data.results[1].formatted_address);
+							current_adress = data.results[1].formatted_address;
+							document.getElementById("current_adress").innerHTML = current_adress;		
+                        },
+                        error: function(data)
+                        {
+                            alert("error");
+                        }
+                    });
+	
+	
+	initMap(current_lt,current_ln);
+}
+	
+
+
+
+
+$(document).ready(function () { $('#btnGetWeather').click(function (e) {
+e.preventDefault(); 
+var resultElement = $('#resultDiv');
+var city,country,sure,mesafe;
+resultElement.html(''); 
+var requestData = $('#txtCity').val() + ',' + $('#txtCountry').val(); 
+
+$.ajax({ 
+		url: 'http://api.openweathermap.org/data/2.5/weather?q='+ requestData +'&'+'appid="TAKE A KEY FROM OPENWEATHERMAP"', 
+		method: 'POST', 
+		data: { q: requestData, APPID: APPIDkey }, 
+		dataType: 'json', 
+		success: function (response) 
+		{
+			if (response.message != null) 
+			{ 
+			resultElement.html(response.message);
+			} 
+			else 
+			{ /*resultElement.html('Weather: ' + response.weather[0].main + '<br/>' + 'Description: ' + response.weather[0].description
+				+ '<br/>' + 'name: ' + response.name + '<br/>' + 'clouds: ' + response.clouds.all + '<br/>' + 'id: ' + response.id
+				+ '<br/>' + 'lon: ' + response.coord.lon + '<br/>' + 'lat: ' + response.coord.lat + '<br/>' + 'ulke:' + response.sys.country);*/
+				document.getElementById("main").innerHTML = response.weather[0].main;
+				document.getElementById("description").innerHTML = response.weather[0].description;
+				document.getElementById("name").innerHTML = response.name;
+				document.getElementById("clouds").innerHTML = response.clouds.all;
+				document.getElementById("id").innerHTML = response.id;
+				document.getElementById("lon").innerHTML = response.coord.lon;
+				document.getElementById("lat").innerHTML = response.coord.lat;
+				document.getElementById("country").innerHTML = response.sys.country;
+				ln = response.coord.lon;
+				lt = response.coord.lat;
+				city = response.name;
+				country = response.sys.country;
+
+				initMap(lt,ln);
+
+			} 
+		}, 
+	error: function (err) { alert(err); } 
+});
+		
+			//calculate distance,time
+			//disabled cors
+			 $.ajax({
+						contentType: "application/json; charset=UTF-8",
+                        dataType: 'json',
+						crossDomain: true,
+						callback: 'callback',
+                        headers: {
+                        Accept:"application/json","Access-Control-Allow-Origin":"*"
+						},
+                        type:'POST',
+                        url:'https://cors-anywhere.herokuapp.com/https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='+ current_adress + '&' + 'destinations=' + requestData + '&' + 'key="PUT YOUR GOOGLE API KEY AGAIN"&jsonp=callback',
+                        success: function(data)
+                        {
+							console.log(data.destination_addresses.toString());
+							mesafe = data.rows[0].elements[0].distance.text.toString();
+							//console.log("mesafe1="+mesafe);
+							//mil to km
+							mesafe = parseFloat(mesafe.substr(0, 4)) / 0.62137;
+							mesafe = Math.round(mesafe);
+							sure = data.rows[0].elements[0].duration.text.toString();
+							console.log('Sure: '+ sure);
+							console.log('Mesafe : '+ Math.round(mesafe) + 'km');
+							document.getElementById("duration").innerHTML = sure;
+							document.getElementById("distance").innerHTML = mesafe + 'km';
+							
+                        },
+                        error: function(data)
+                        {
+                            alert("error");
+                        },
+						jsonp: 'jsonp'
+
+                    });
+					
+				
+
+	}); 
+ });
+ 
+
+ 
+//http://api.openweathermap.org/data/2.5/weather?q=Iznik,TR&appid=c7150167d970bb71fad0859e83d6f42c
+</script>
+</head>
+<body style="font-family:Arial" onload="getLocation()">
+<div class = "col-md-6">
+<h5>Please allow permissions! :)</h5><br/>
+	
+		<table> 
+		<tr>
+		<div class="input-group input-group-sm mb-3" >
+		  <div class="input-group-prepend">
+			<span class="input-group-text" id="inputGroup-sizing-sm">City</span>
+		  </div>
+		  <input type="text" id="txtCity" size="35" class="form-control" aria-label="Small" aria-describedby="inputGroup-sizing-sm">
+		</div>
+		</tr>
+		
+		<tr>
+		<div class="input-group mb-3">
+		  <div class="input-group-prepend">
+			<span class="input-group-text" id="inputGroup-sizing-default">Country</span>
+		  </div>
+		  <input type="text" id="txtCountry" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+		</div>
+		</tr> 
+		</table>
+
+
+
+<table>
+<tr>
+<td>Current Adress > </td>
+<td><span id="current_adress"></span></td>
+</tr>
+</table>
+<br/> 
+<input class="btn btn-dark" type="button" id="btnGetWeather" value="Get Weather">
+<br /><br /> <div id="resultDiv"> </div>
+
+
+<table>
+<tr>
+<td>Id:</td>
+<td><span id="id" type="text"></span></td>
+</tr>
+<tr>
+<td>Weather:</td>
+<td><span id="main" type="text"></span></td>
+</tr>
+<tr>
+<td>Description:</td>
+<td><span id="description" type="text"></span></td>
+</tr>
+<tr>
+<td>Name:</td>
+<td><span id="name" type="text"></span></td>
+</tr>
+<tr>
+<td>Clouds:</td>
+<td><span id="clouds" type="text"></span></td>
+</tr>
+<tr>
+<td>Latitude:</td>
+<td><span id="lat" type="text"></span></td>
+</tr>
+<tr>
+<td>Longtitude:</td>
+<td><span id="lon" type="text"></span></td>
+</tr>
+<tr>
+<td>Distance:</td>
+<td><span id="distance" type="text"></span></td>
+</tr>
+<tr>
+<td>Duration:</td>
+<td><span id="duration" type="text"></span></td>
+</tr>
+<tr>
+<td>Country:</td>
+<td><span id="country" type="text"></span></td>
+</tr>
+</table>
+
+
+</div>
+<title>Weather Info</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+<div id="map"></div>
+
+<script>
+      var map;
+      function initMap(lt,ln) {
+	  var uluru = {lat: +lt, lng: +ln};
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: +lt, lng: +ln},
+          zoom: 13
+        });
+		var marker = new google.maps.Marker({
+          position: uluru,
+          map: map
+        });
+      }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAc-ymia21XPKlNb3_UvXD-p1EixTluYPQ&callback=initMap" async defer></script>
+
+
+</body>
+</html>
